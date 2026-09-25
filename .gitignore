@@ -1,4 +1,5 @@
 auth_info/
+auth_info.backup/
 node_modules/
 .env
 *.log
