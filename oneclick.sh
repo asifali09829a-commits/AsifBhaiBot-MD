@@ -14,7 +14,6 @@ pkg update -y
 pkg install -y git nodejs ffmpeg curl
 
 if [ -d "$DIR/.git" ]; then
-    echo "✅ AsifBhaiBot-MD already exists."
     cd "$DIR"
     git pull --ff-only
 else
@@ -22,14 +21,19 @@ else
     cd "$DIR"
 fi
 
-bash install.sh
+echo ""
+echo "📦 Installing Node.js dependencies..."
+npm install
+
+mkdir -p auth_info
 
 echo ""
 echo "🚀 Starting bot..."
 npm start &
 BOT_PID=$!
 
-echo "⏳ Waiting for bot..."
+echo "⏳ Waiting for dashboard..."
+
 for i in $(seq 1 30); do
     if curl -s --max-time 2 http://127.0.0.1:3001/ >/dev/null 2>&1; then
         break
@@ -51,10 +55,16 @@ if [[ "$NUMBER" == 00* ]]; then
     NUMBER="${NUMBER#00}"
 fi
 
-echo ""
-echo "⏳ Requesting pairing code..."
+if [[ -z "$NUMBER" ]]; then
+    echo "❌ Number required."
+    kill "$BOT_PID" 2>/dev/null || true
+    exit 1
+fi
 
-RESPONSE=$(curl -s --max-time 30 \
+echo ""
+echo "⏳ Requesting pairing code for $NUMBER..."
+
+RESPONSE=$(curl -s --max-time 60 \
   -X POST http://127.0.0.1:3001/api/pair \
   -H "Content-Type: application/json" \
   -d "{\"number\":\"$NUMBER\"}")
@@ -66,8 +76,11 @@ echo "========================================"
 echo "$RESPONSE"
 echo "========================================"
 echo ""
-echo "📱 WhatsApp > Linked Devices > Link a device"
-echo "🔗 Use phone number instead / Pairing Code"
+echo "📱 WhatsApp → Linked Devices"
+echo "🔗 Link a device → Link with phone number"
+echo "🔐 Enter the pairing code shown above."
+echo ""
+echo "✅ Bot process is running..."
 echo ""
 
 wait "$BOT_PID"
