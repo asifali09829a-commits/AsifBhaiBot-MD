@@ -47,7 +47,7 @@ echo "       📱 WHATSAPP PAIRING"
 echo "========================================"
 echo ""
 
-read -r -p "WhatsApp number (+923xxxxxxxxx): " NUMBER
+read -r -p "WhatsApp number (+923xxxxxxxxx): " NUMBER </dev/tty
 
 NUMBER=$(echo "$NUMBER" | tr -d ' +()-')
 
