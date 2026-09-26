@@ -12,7 +12,8 @@ const {
   useMultiFileAuthState,
   DisconnectReason,
   downloadContentFromMessage,
-  Browsers
+  Browsers,
+  fetchLatestWaWebVersion,
 } = require("@whiskeysockets/baileys");
 
 const app = express();
@@ -30,11 +31,18 @@ const started = Date.now();
 async function startWhatsApp() {
   const { state, saveCreds } = await useMultiFileAuthState("./auth_info");
 
+  const { version } = await fetchLatestWaWebVersion();
+  console.log("🌐 WA Web version:", version);
+
   sock = makeWASocket({
+    version,
     auth: state,
     logger: pino({ level: "debug" }),
     printQRInTerminal: false,
-    browser: Browsers.macOS("Desktop")
+    browser: Browsers.ubuntu("Chrome"),
+    syncFullHistory: false,
+    markOnlineOnConnect: false,
+    connectTimeoutMs: 120000
   });
 
   sock.ev.on("creds.update", saveCreds);
@@ -1891,8 +1899,8 @@ if (cmd === ".botinfo")
 
 
   sock.ev.on("connection.update", async ({ connection, lastDisconnect, qr }) => {
-    if (qr) {
-      console.log("\n📱 QR available — pairing code ke liye number enter karo.");
+    if (connection === "connecting" || qr) {
+      console.log("\n📱 WhatsApp connection ready for pairing.");
     }
 
     if (connection === "open") {
@@ -1903,9 +1911,23 @@ if (cmd === ".botinfo")
     if (connection === "close") {
       const code = lastDisconnect?.error?.output?.statusCode;
       console.log("❌ WhatsApp disconnected:", code);
-      if (code !== DisconnectReason.loggedOut) {
-        // setTimeout(startWhatsApp, 5000);
+
+      if (code === DisconnectReason.loggedOut) {
+        console.log("🚪 WhatsApp session logged out. Delete auth_info and pair again.");
+        return;
       }
+
+      if (code === 515 || code === DisconnectReason.restartRequired) {
+        console.log("♻️ WhatsApp requested restart. Restarting in 3 seconds...");
+      } else {
+        console.log("♻️ Reconnecting in 5 seconds...");
+      }
+
+      setTimeout(() => {
+        startWhatsApp().catch(err => {
+          console.error("Restart error:", err.message);
+        });
+      }, code === 515 ? 3000 : 5000);
     }
   });
 }
@@ -1942,16 +1964,20 @@ app.post("/api/pair", async (req, res) => {
       });
     }
 
-    if (sock.authState?.creds?.registered) {
-      return res.json({
-        ok: false,
-        error: "Already paired."
-      });
-    }
+    console.log("📲 Pair request received for:", number);
 
-    pairingCode = await sock.requestPairingCode(number);
+    console.log("⏳ Requesting WhatsApp pairing code...");
 
-    res.json({
+    const codePromise = sock.requestPairingCode(number);
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Pairing request timed out after 30 seconds")), 30000)
+    );
+
+    pairingCode = await Promise.race([codePromise, timeoutPromise]);
+
+    console.log("✅ Pairing code received:", pairingCode);
+
+    return res.json({
       ok: true,
       pairingCode
     });

@@ -1,8 +1,20 @@
-auth_info/
-auth_info.backup/
 node_modules/
 .env
+auth_info/
+storage/*
+!storage/README.md
+database/*.json
+backups/
+
+# Local logs
 *.log
+
+# Test/generated media
 *.mp3
-*.mp4
 *.webm
+*.mp4
+
+# Local backups
+*.backup
+*.backup.js
+*.before-*

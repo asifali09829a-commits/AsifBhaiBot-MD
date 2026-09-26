@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ASIFBHAI MD — WhatsApp Pairing</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#07111f;
+  color:#fff;
+}
+.container{max-width:700px;margin:auto;padding:20px}
+.card{
+  background:#0d1b2a;
+  border:1px solid #19324a;
+  border-radius:18px;
+  padding:20px;
+  margin:14px 0;
+  box-shadow:0 8px 30px #0005;
+}
+h1{margin:0;font-size:30px}
+.sub{color:#9fb3c8;margin-top:6px}
+.badge{
+  display:inline-block;
+  margin-top:14px;
+  padding:7px 12px;
+  border-radius:20px;
+  background:#123c2d;
+  color:#62e6a5;
+  font-size:13px;
+}
+.server{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  background:#091522;
+  border:1px solid #1b344a;
+  padding:14px;
+  border-radius:14px;
+  margin:10px 0;
+}
+.server small{color:#8da2b5}
+button{
+  border:0;
+  border-radius:10px;
+  padding:11px 16px;
+  font-weight:bold;
+  cursor:pointer;
+  background:#25d366;
+  color:#03150b;
+}
+input{
+  width:100%;
+  padding:15px;
+  margin:10px 0;
+  border-radius:12px;
+  border:1px solid #29465e;
+  background:#081522;
+  color:white;
+  font-size:16px;
+  outline:none;
+}
+.full{width:100%;margin-top:5px}
+#result{
+  display:none;
+  text-align:center;
+  margin-top:15px;
+  padding:18px;
+  border-radius:14px;
+  background:#071b12;
+  border:1px solid #1e7049;
+}
+.code{
+  font-size:28px;
+  letter-spacing:5px;
+  font-weight:bold;
+  color:#65e6a6;
+  margin:12px 0;
+}
+.features{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:9px;
+}
+.feature{
+  padding:11px;
+  border-radius:10px;
+  background:#091522;
+  color:#c7d5e2;
+  font-size:14px;
+}
+.links{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.links a{
+  color:#7bc7ff;
+  text-decoration:none;
+}
+footer{
+  text-align:center;
+  color:#71869a;
+  padding:20px 0;
+  font-size:13px;
+}
+@media(max-width:500px){
+  .container{padding:12px}
+  h1{font-size:25px}
+  .features{grid-template-columns:1fr}
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+  <div class="card">
+    <h1>🚀 ASIFBHAI MD</h1>
+    <div class="sub">WhatsApp Multi-Device Pairing</div>
+    <span class="badge">🟢 Server Ready</span>
+  </div>
+
+  <div class="card">
+    <h3>🖥️ Select Server</h3>
+
+    <div class="server">
+      <div>
+        <b>Server 1</b><br>
+        <small>Active: 0 / Limit: 50</small>
+      </div>
+      <button onclick="selectServer(1)">Select</button>
+    </div>
+
+    <div class="server">
+      <div>
+        <b>Server 2</b><br>
+        <small>Active: 0 / Limit: 50</small>
+      </div>
+      <button onclick="selectServer(2)">Select</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>🔐 How to link device</h3>
+    <p>1. Enter your WhatsApp number with country code.</p>
+    <p>2. Tap <b>Get Pair Code</b>.</p>
+    <p>3. WhatsApp → Linked Devices → Link a Device → Link with phone number.</p>
+    <p>4. Enter the displayed code.</p>
+
+    <input id="number" type="tel" placeholder="92xxxxxxxxxx">
+
+    <button class="full" onclick="getPairCode()">
+      🔑 Get Pair Code
+    </button>
+
+    <div id="result">
+      <div>Pairing Code</div>
+      <div id="code" class="code">--------</div>
+      <button onclick="copyCode()">📋 Copy Code</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>🔗 Links</h3>
+    <div class="links">
+      <a href="#">Owner</a>
+      <a href="#">Channel</a>
+      <a href="#">GitHub</a>
+      <a href="#">Tutorial</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>🤖 Bot Features</h3>
+    <div class="features">
+      <div class="feature">📱 Multi-device pairing</div>
+      <div class="feature">♻️ Auto session restore</div>
+      <div class="feature">🎵 Music & video</div>
+      <div class="feature">👥 Group tools</div>
+      <div class="feature">🤖 AI tools</div>
+      <div class="feature">🎨 Stickers & convert</div>
+      <div class="feature">🎮 Fun & games</div>
+      <div class="feature">🔎 Search tools</div>
+      <div class="feature">🛡️ Protection tools</div>
+      <div class="feature">⚡ Utility tools</div>
+      <div class="feature">👋 Welcome system</div>
+      <div class="feature">👑 Owner tools</div>
+    </div>
+  </div>
+
+  <footer>
+    Powered by ASIFBHAI MD
+  </footer>
+
+</div>
+
+<script>
+let selectedServer = 1;
+
+function selectServer(server){
+  selectedServer = server;
+  alert("Server " + server + " selected");
+}
+
+async function getPairCode(){
+  const input = document.getElementById("number");
+  const result = document.getElementById("result");
+  const code = document.getElementById("code");
+
+  const number = input.value.replace(/\D/g,'');
+
+  if(!number){
+    alert("Please enter WhatsApp number with country code.");
+    return;
+  }
+
+  code.textContent = "LOADING";
+  result.style.display = "block";
+
+  try{
+    const response = await fetch("/api/pair",{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify({number})
+    });
+
+    const data = await response.json();
+
+    if(!data.ok){
+      throw new Error(data.error || "Pairing failed");
+    }
+
+    code.textContent = data.pairingCode || "NO CODE";
+
+  }catch(error){
+    result.style.display = "block";
+    code.textContent = "ERROR";
+    alert(error.message);
+  }
+}
+
+async function copyCode(){
+  const code = document.getElementById("code").textContent;
+
+  if(code && code !== "ERROR" && code !== "LOADING"){
+    await navigator.clipboard.writeText(code);
+    alert("Pairing code copied!");
+  }
+}
+</script>
+
+</body>
+</html>

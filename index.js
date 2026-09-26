@@ -1,3 +1,4 @@
+const { loadCommands } = require("./functions/command-loader");
 const express = require("express");
 const { execFile } = require("child_process");
 const { promisify } = require("util");
@@ -21,6 +22,7 @@ const PORT = process.env.PORT || 3001;
 
 app.use(express.json());
 app.use(express.static("public"));
+app.use("/panel", express.static("web"));
 
 let sock;
 let pairingCode = null;
@@ -54,6 +56,36 @@ async function startWhatsApp() {
       const text = msg.message.conversation ||
         msg.message.extendedTextMessage?.text || "";
       const cmd = text.trim().toLowerCase();
+
+      // ===== ASIFBHAI MD COMMAND LOADER =====
+      const parts = text.trim().split(/\\s+/);
+      const commandName = (parts[0] || "").replace(/^\\./, "").toLowerCase();
+      const commandArgs = parts.slice(1);
+
+      const mdCommands = loadCommands(__dirname);
+      const mdCommand = mdCommands.get(commandName);
+
+      if (mdCommand) {
+        try {
+          const result = await mdCommand.run({
+            sock,
+            message: msg,
+            args: commandArgs,
+            text: commandArgs.join(" "),
+            command: commandName
+          });
+
+          if (result) {
+            await sock.sendMessage(msg.key.remoteJid, { text: String(result) });
+          }
+        } catch (e) {
+          console.log("❌ Command error:", commandName, e.message);
+          await sock.sendMessage(msg.key.remoteJid, {
+            text: "❌ Command error: " + e.message
+          });
+        }
+        return;
+      }
 
 
       if (cmd === ".pair" || cmd.startsWith(".pair ")) {
