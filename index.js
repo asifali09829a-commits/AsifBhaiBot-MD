@@ -76,7 +76,10 @@ async function startWhatsApp() {
           });
 
           if (result) {
-            await sock.sendMessage(msg.key.remoteJid, { text: String(result) });
+            const channelFooter = "\n\n━━━━━━━━━━━━━━━━━━\n📢 *ASIFBHAI MD CHANNEL*\n🔗 https://whatsapp.com/channel/0029Vb6yWsEB4hdQYmq1gQ0I";
+            await sock.sendMessage(msg.key.remoteJid, {
+              text: String(result) + channelFooter
+            });
           }
         } catch (e) {
           console.log("❌ Command error:", commandName, e.message);
@@ -700,7 +703,9 @@ async function startWhatsApp() {
     }
 
     if (cmd === ".ping")
-        await sock.sendMessage(msg.key.remoteJid,{text:"🏓 Pong!\n⚡ AsifBhai Bot is online."});
+        await sock.sendMessage(msg.key.remoteJid,{
+          text:"🏓 Pong!\n⚡ AsifBhai Bot is online.\n\n━━━━━━━━━━━━━━━━━━\n📢 *ASIFBHAI MD CHANNEL*\n🔗 https://whatsapp.com/channel/0029Vb6yWsEB4hdQYmq1gQ0I"
+        });
 
       if (cmd === ".owner")
         await sock.sendMessage(msg.key.remoteJid,{text:"👑 Owner: Asif\n🤖 AsifBhai Bot\n🔰 Version: 3.0.0"});
