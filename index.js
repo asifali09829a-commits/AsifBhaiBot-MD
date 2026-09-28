@@ -94,8 +94,8 @@ async function startWhatsApp(sessionId) {
       let cmd = text.trim().toLowerCase();
 
       // ===== ASIFBHAI MD COMMAND LOADER =====
-      const parts = text.trim().split(/\\s+/);
-      const commandName = (parts[0] || "").replace(/^\\./, "").toLowerCase();
+      const parts = text.trim().split(/\s+/);
+      const commandName = (parts[0] || "").replace(/^\./, "").toLowerCase();
       const commandArgs = parts.slice(1);
 
       const mdCommands = loadCommands(__dirname);
