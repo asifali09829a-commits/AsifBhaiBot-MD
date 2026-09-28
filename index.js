@@ -71,6 +71,23 @@ async function startWhatsApp(sessionId) {
     try {
       const msg = messages[0];
       if (!msg?.message) return;
+      // ===== ASIFBHAI AUTO REACT =====
+      try {
+        const reactConfigFile = require("path").join(__dirname, "aoutreact.json");
+        let reactConfig = { enabled: false };
+        if (fs.existsSync(reactConfigFile)) {
+          try { reactConfig = JSON.parse(fs.readFileSync(reactConfigFile, "utf8")); } catch (e) {}
+        }
+        if (reactConfig.enabled && !msg.key.fromMe && msg.key.remoteJid !== "status@broadcast") {
+          const reactions = ["❤️", "🔥", "😍", "😂", "👍", "💯", "✨"];
+          const reaction = reactions[Math.floor(Math.random() * reactions.length)];
+          await sock.sendMessage(msg.key.remoteJid, {
+            react: { text: reaction, key: msg.key }
+          });
+        }
+      } catch (e) {
+        console.log("❌ AutoReact error:", e.message);
+      }
 
       let text = msg.message.conversation ||
         msg.message.extendedTextMessage?.text || "";
@@ -1920,7 +1937,7 @@ if (cmd === ".menu") {
 ║┃
 ║┃ 🤖 *OTHER*
 ║┃ ➳ *.ai* *.echo* *.say*
-║┃ ➳ *.help* *.menu* *.vv* *.aoutreact*
+║┃ ➳ *.help* *.menu* *.vv* *.aoutreact on/off* *.vv* *.aoutreact*
 ║┃
 ║╰────•
 ╚══════─── • ───════╝
