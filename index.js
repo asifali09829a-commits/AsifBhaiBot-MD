@@ -1920,7 +1920,7 @@ if (cmd === ".menu") {
 ║┃
 ║┃ 🤖 *OTHER*
 ║┃ ➳ *.ai* *.echo* *.say*
-║┃ ➳ *.help* *.menu*
+║┃ ➳ *.help* *.menu* *.vv* *.aoutreact*
 ║┃
 ║╰────•
 ╚══════─── • ───════╝
