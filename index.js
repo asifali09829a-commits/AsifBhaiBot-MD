@@ -24,28 +24,47 @@ app.use(express.json());
 app.use(express.static("public"));
 app.use("/panel", express.static("web"));
 
-let sock;
+const sessions = new Map();
+const pairingLocks = new Map();
 let pairingCode = null;
 let commands = 0;
 let users = 0;
 const started = Date.now();
 
-async function startWhatsApp() {
-  const { state, saveCreds } = await useMultiFileAuthState("./auth_info");
+async function startWhatsApp(sessionId) {
+  sessionId = String(sessionId || "").replace(/\\D/g, "");
+
+  if (!sessionId) {
+    throw new Error("Session number required");
+  }
+
+  const sessionDir = `./sessions/${sessionId}`;
+  fs.mkdirSync(sessionDir, { recursive: true });
+
+  const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
 
   const { version } = await fetchLatestWaWebVersion();
   console.log("🌐 WA Web version:", version);
 
-  sock = makeWASocket({
+  const sock = makeWASocket({
     version,
     auth: state,
     logger: pino({ level: "debug" }),
     printQRInTerminal: false,
-    browser: Browsers.ubuntu("Chrome"),
+    browser: Browsers.macOS("Chrome"),
     syncFullHistory: false,
     markOnlineOnConnect: false,
     connectTimeoutMs: 120000
   });
+
+  sessions.set(sessionId, {
+    sock,
+    sessionId,
+    pairingCode: null,
+    createdAt: Date.now()
+  });
+
+  console.log(`📱 Session started: ${sessionId}`);
 
   sock.ev.on("creds.update", saveCreds);
   sock.ev.on("messages.upsert", async ({ messages }) => {
@@ -53,9 +72,9 @@ async function startWhatsApp() {
       const msg = messages[0];
       if (!msg?.message) return;
 
-      const text = msg.message.conversation ||
+      let text = msg.message.conversation ||
         msg.message.extendedTextMessage?.text || "";
-      const cmd = text.trim().toLowerCase();
+      let cmd = text.trim().toLowerCase();
 
       // ===== ASIFBHAI MD COMMAND LOADER =====
       const parts = text.trim().split(/\\s+/);
@@ -96,6 +115,36 @@ async function startWhatsApp() {
           text:"🔐 *ASIFBHAI PAIR*\n\n📱 Dost apne WhatsApp mein:\n1️⃣ Settings → Linked Devices\n2️⃣ Link a Device\n3️⃣ Apne authorized device ko link karein.\n\n⚠️ Sirf apne account ki permission se link karein."
         });
         return;
+      }
+
+      // ===== COMMAND ALIASES =====
+      if (cmd.startsWith(".music ") || cmd === ".music") {
+        cmd = ".song" + cmd.slice(6);
+        text = cmd;
+      } else if (cmd.startsWith(".song2 ") || cmd === ".song2") {
+        cmd = ".song" + cmd.slice(6);
+        text = cmd;
+      } else if (cmd.startsWith(".ytsearch ") || cmd === ".ytsearch") {
+        cmd = ".yts" + cmd.slice(9);
+        text = cmd;
+      } else if (cmd.startsWith(".audio ") || cmd === ".audio") {
+        cmd = ".ytmp3" + cmd.slice(6);
+        text = cmd;
+      } else if (cmd.startsWith(".mp4 ") || cmd === ".mp4") {
+        cmd = ".ytmp4" + cmd.slice(4);
+        text = cmd;
+      } else if (cmd.startsWith(".yt ") || cmd === ".yt") {
+        cmd = ".ytmp4" + cmd.slice(3);
+        text = cmd;
+      } else if (cmd.startsWith(".vid ") || cmd === ".vid") {
+        cmd = ".video" + cmd.slice(4);
+        text = cmd;
+      } else if (cmd.startsWith(".st ") || cmd === ".st") {
+        cmd = ".sticker" + cmd.slice(3);
+        text = cmd;
+      } else if (cmd.startsWith(".img ") || cmd === ".img") {
+        cmd = ".toimg" + cmd.slice(4);
+        text = cmd;
       }
 
       // ===== MEDIA COMMANDS =====
@@ -963,16 +1012,6 @@ async function startWhatsApp() {
         return;
       }
 
-if (cmd.startsWith(".music ")) {
-      cmd=".song "+cmd.slice(7).trim();
-      text=cmd;
-    }
-
-    if (cmd.startsWith(".yt ")) {
-      cmd=".ytmp4 "+cmd.slice(4).trim();
-      text=cmd;
-    }
-
     if (cmd === ".alive") {
       await sock.sendMessage(msg.key.remoteJid,{text:"🟢 ASIFBHAI BOT IS ALIVE!\n\n⚡ Online\n🤖 Baileys active\n👑 Owner: Asif"});
       return;
@@ -1507,31 +1546,6 @@ if (cmd === ".speed") {
   return;
 }
 
-if (cmd.startsWith(".ytsearch ")) {
-  cmd=".yts "+cmd.slice(10).trim();
-  text=cmd;
-}
-
-if (cmd.startsWith(".audio ")) {
-  cmd=".ytmp3 "+cmd.slice(7).trim();
-  text=cmd;
-}
-
-if (cmd.startsWith(".mp4 ")) {
-  cmd=".ytmp4 "+cmd.slice(5).trim();
-  text=cmd;
-}
-
-if (cmd.startsWith(".vid ")) {
-  cmd=".video "+cmd.slice(5).trim();
-  text=cmd;
-}
-
-if (cmd.startsWith(".song2 ")) {
-  cmd=".song "+cmd.slice(7).trim();
-  text=cmd;
-}
-
 if (cmd === ".st" && msg.message?.extendedTextMessage?.contextInfo?.quotedMessage) {
   cmd=".sticker";
 }
@@ -1914,7 +1928,7 @@ if (cmd === ".menu") {
 > powered by *AsifBhaiBot 🔥*`;
 
   await sock.sendMessage(msg.key.remoteJid, {
-    image: { url: "/data/data/com.termux/files/home/AsifBhaiBot/menu.jpg" },
+    image: { url: "/app/menu.jpg" },
     caption: menuText
   });
 }
@@ -1941,8 +1955,14 @@ if (cmd === ".botinfo")
     }
 
     if (connection === "open") {
-      console.log("✅ WhatsApp connected!");
+      console.log(`✅ WhatsApp connected: ${sessionId}`);
       pairingCode = null;
+
+      const session = sessions.get(sessionId);
+      if (session) {
+        session.connected = true;
+        session.pairingCode = null;
+      }
     }
 
     if (connection === "close") {
@@ -1950,7 +1970,11 @@ if (cmd === ".botinfo")
       console.log("❌ WhatsApp disconnected:", code);
 
       if (code === DisconnectReason.loggedOut) {
-        console.log("🚪 WhatsApp session logged out. Delete auth_info and pair again.");
+        console.log(`🚪 WhatsApp session logged out: ${sessionId}`);
+
+        sessions.delete(sessionId);
+
+        console.log(`🗑️ Session removed: ${sessionId}`);
         return;
       }
 
@@ -1961,8 +1985,8 @@ if (cmd === ".botinfo")
       }
 
       setTimeout(() => {
-        startWhatsApp().catch(err => {
-          console.error("Restart error:", err.message);
+        startWhatsApp(sessionId).catch(err => {
+          console.error(`Restart error (${sessionId}):`, err.message);
         });
       }, code === 515 ? 3000 : 5000);
     }
@@ -1994,36 +2018,61 @@ app.post("/api/pair", async (req, res) => {
       });
     }
 
-    if (!sock) {
-      return res.status(503).json({
+    console.log("📲 Pair request received for:", number);
+
+    // Prevent multiple pairing requests for the same number
+    if (pairingLocks.has(number)) {
+      return res.status(429).json({
         ok: false,
-        error: "WhatsApp is starting, try again in a few seconds."
+        error: "Pairing already in progress for this number. Please wait."
       });
     }
 
-    console.log("📲 Pair request received for:", number);
+    pairingLocks.set(number, true);
 
-    console.log("⏳ Requesting WhatsApp pairing code...");
+    try {
+      let session = sessions.get(number);
 
-    const codePromise = sock.requestPairingCode(number);
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("Pairing request timed out after 30 seconds")), 30000)
-    );
+      // Create only ONE socket for this number
+      if (!session) {
+        await startWhatsApp(number);
+        session = sessions.get(number);
+      }
 
-    pairingCode = await Promise.race([codePromise, timeoutPromise]);
+      if (!session?.sock) {
+        throw new Error("WhatsApp session is starting. Try again in a few seconds.");
+      }
 
-    console.log("✅ Pairing code received:", pairingCode);
+      console.log("⏳ Waiting for WhatsApp connection before pairing...");
 
-    return res.json({
-      ok: true,
-      pairingCode
-    });
+      // Give the socket time to establish the WebSocket connection
+      await new Promise(resolve => setTimeout(resolve, 3000));
 
-    console.log("\n🔐 PAIRING CODE:", pairingCode);
-    console.log("📱 WhatsApp > Linked Devices > Link a device > Link with phone number");
+      console.log("⏳ Requesting pairing code for:", number);
+
+      const code = await session.sock.requestPairingCode(number);
+
+      session.pairingCode = code;
+
+      console.log(`✅ Pairing code received for ${number}: ${code}`);
+
+      return res.json({
+        ok: true,
+        pairingCode: code,
+        number,
+        message: "Use this code in WhatsApp → Linked Devices → Link with phone number."
+      });
+
+    } finally {
+      setTimeout(() => {
+        pairingLocks.delete(number);
+      }, 10000);
+    }
+
   } catch (e) {
     console.error("Pairing error:", e.message);
-    res.status(500).json({
+
+    return res.status(500).json({
       ok: false,
       error: e.message
     });
@@ -2039,5 +2088,20 @@ app.post("/api/command", (req, res) => {
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`⚡ AsifBhai Bot running on port ${PORT}`);
   console.log(`🌐 Dashboard: http://127.0.0.1:${PORT}`);
-  startWhatsApp();
+  // Start existing saved sessions
+  fs.mkdirSync("./sessions", { recursive: true });
+
+  const savedSessions = fs.readdirSync("./sessions", { withFileTypes: true })
+    .filter(x => x.isDirectory())
+    .map(x => x.name);
+
+  if (savedSessions.length === 0) {
+    console.log("📱 No WhatsApp sessions yet. Use the Pair Web.");
+  } else {
+    for (const sessionId of savedSessions) {
+      startWhatsApp(sessionId).catch(err => {
+        console.error(`Session start error (${sessionId}):`, err.message);
+      });
+    }
+  }
 });
