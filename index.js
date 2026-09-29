@@ -97,8 +97,85 @@ async function startWhatsApp(sessionId) {
       }
 
       let text = msg.message.conversation ||
-        msg.message.extendedTextMessage?.text || "";
-      let cmd = text.trim().toLowerCase();
+        msg.message.extendedTextMessage?.text ||
+        msg.message.extendedTextMessage?.contextInfo?.quotedMessage?.conversation ||
+        "";
+      text = String(text).trim();
+      let cmd = text.toLowerCase();
+
+      // ===== DIRECT MENU HANDLER =====
+      // Handle .menu before command-loader/aliases so it cannot be intercepted.
+      if (cmd === ".menu") {
+        const menu = `📋 *ASIFBHAI BOT — ALL COMMANDS*
+
+╔══════─── • ───════╗
+║┃ ✧ *ASIFBHAI BOT* ✧
+║┃ 👑 Owner: Asif
+║┃ 🔰 Version: 3.0.0
+║┃ 🌍 Mode: Public
+║┃
+║┃ 🎵 *MUSIC & MEDIA*
+║┃ ➳ *.song* *.play* *.music* *.song2*
+║┃ ➳ *.video* *.vid*
+║┃ ➳ *.yts* *.ytsearch*
+║┃ ➳ *.ytmp3* *.audio*
+║┃ ➳ *.ytmp4* *.mp4* *.yt*
+║┃ ➳ *.toaudio*
+║┃
+║┃ 🎮 *FUN*
+║┃ ➳ *.truth* *.dare* *.quote*
+║┃ ➳ *.riddle* *.catfact* *.meme*
+║┃ ➳ *.coin* *.dice* *.8ball*
+║┃ ➳ *.choose* *.pick* *.rps*
+║┃ ➳ *.joke* *.fact* *.fortune*
+║┃ ➳ *.compliment* *.roast*
+║┃ ➳ *.ship* *.compat* *.rate*
+║┃
+║┃ 🔧 *TOOLS*
+║┃ ➳ *.sticker* *.s* *.st*
+║┃ ➳ *.toimg* *.img*
+║┃ ➳ *.qr* *.calc* *.calc2* *.math*
+║┃ ➳ *.time* *.date* *.timestamp*
+║┃ ➳ *.reverse* *.reversewords*
+║┃ ➳ *.wordcount* *.words* *.charcount*
+║┃ ➳ *.upper* *.lower* *.swapcase*
+║┃ ➳ *.base64* *.unbase64*
+║┃ ➳ *.hash* *.uuid* *.digits*
+║┃
+║┃ 👥 *GROUP*
+║┃ ➳ *.groupid* *.groupinfo*
+║┃ ➳ *.members* *.admins*
+║┃ ➳ *.mention* *.mentionall*
+║┃ ➳ *.tagall* *.hidetag*
+║┃ ➳ *.kick* *.promote* *.demote*
+║┃ ➳ *.open* *.close* *.subject*
+║┃
+║┃ 📊 *SYSTEM*
+║┃ ➳ *.ping* *.alive* *.status*
+║┃ ➳ *.uptime* *.runtime*
+║┃ ➳ *.device* *.memory* *.cpu*
+║┃ ➳ *.server* *.speed*
+║┃ ➳ *.botinfo* *.owner* *.version*
+║┃
+║┃ ⚙️ *SETTINGS*
+║┃ ➳ *.welcome on/off*
+║┃ ➳ *.goodbye on/off*
+║┃ ➳ *.botname* *.setprefix*
+║┃
+║┃ 🤖 *OTHER*
+║┃ ➳ *.ai* *.echo* *.say*
+║┃ ➳ *.help* *.menu* *.vv*
+║┃ ➳ *.aoutreact on/off*
+║╰────•
+╚══════─── • ───════╝
+
+> powered by *AsifBhaiBot 🔥*`;
+
+        console.log("✅ MENU_HANDLER_HIT:", msg.key.remoteJid);
+
+        await sock.sendMessage(msg.key.remoteJid, { text: menu });
+        return;
+      }
 
       // ===== ASIFBHAI MD COMMAND LOADER =====
       const parts = text.trim().split(/\s+/);
