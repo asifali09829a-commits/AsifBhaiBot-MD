@@ -1954,7 +1954,7 @@ if (cmd === ".menu") {
 
 > powered by *AsifBhaiBot 🔥*`;
 
-    await sock.sendMessage(from, { text: menu });
+    await sock.sendMessage(msg.key.remoteJid, { text: menu });
     return;
 }
 if (cmd === ".botinfo")
