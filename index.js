@@ -38,6 +38,13 @@ async function startWhatsApp(sessionId) {
     throw new Error("Session number required");
   }
 
+  // Prevent duplicate WhatsApp sockets for the same session
+  const existing = sessions.get(sessionId);
+  if (existing?.sock) {
+    console.log(`⏭️ Session already running: ${sessionId}`);
+    return existing.sock;
+  }
+
   const sessionDir = `./sessions/${sessionId}`;
   fs.mkdirSync(sessionDir, { recursive: true });
 
@@ -99,7 +106,9 @@ async function startWhatsApp(sessionId) {
       const commandArgs = parts.slice(1);
 
       const mdCommands = loadCommands(__dirname);
-      const mdCommand = mdCommands.get(commandName);
+      const mdCommand = commandName === "menu"
+        ? null
+        : mdCommands.get(commandName);
 
       if (mdCommand) {
         try {
@@ -1859,7 +1868,7 @@ if (cmd === ".server") {
 }
 
 if (cmd === ".menu") {
-  const menuText = `📋 *ASIFBHAI BOT — ALL COMMANDS*
+    const menu = `📋 *ASIFBHAI BOT — ALL COMMANDS*
 
 ╔══════─── • ───════╗
 ║┃ ✧ *ASIFBHAI BOT* ✧
@@ -1937,20 +1946,16 @@ if (cmd === ".menu") {
 ║┃
 ║┃ 🤖 *OTHER*
 ║┃ ➳ *.ai* *.echo* *.say*
-║┃ ➳ *.help* *.menu*
-║┃ ➳ *.vv*
-║┃ ➳ *.aoutreact on*
-║┃ ➳ *.aoutreact off*
+║┃ ➳ *.help* *.menu* *.vv*
+║┃ ➳ *.aoutreact on/off* *.aoutreact*
 ║┃
 ║╰────•
 ╚══════─── • ───════╝
 
 > powered by *AsifBhaiBot 🔥*`;
 
-  await sock.sendMessage(msg.key.remoteJid, {
-    image: { url: "/app/menu.jpg" },
-    caption: menuText
-  });
+    await sock.sendMessage(from, { text: menu });
+    return;
 }
 if (cmd === ".botinfo")
         await sock.sendMessage(msg.key.remoteJid,{text:"🤖 *ASIFBHAI BOT*\n\n🟢 Status: Online\n👑 Owner: Asif\n⚡ Engine: Baileys\n🔰 Version: 3.0.0"});
@@ -2004,10 +2009,25 @@ if (cmd === ".botinfo")
         console.log("♻️ Reconnecting in 5 seconds...");
       }
 
-      setTimeout(() => {
-        startWhatsApp(sessionId).catch(err => {
+      setTimeout(async () => {
+        const current = sessions.get(sessionId);
+
+        // Don't create another socket if a newer one is already running
+        if (current?.sock && current.sock !== sock) {
+          console.log(`⏭️ Newer session already exists: ${sessionId}`);
+          return;
+        }
+
+        // Remove the closed socket before reconnecting
+        if (current?.sock === sock) {
+          sessions.delete(sessionId);
+        }
+
+        try {
+          await startWhatsApp(sessionId);
+        } catch (err) {
           console.error(`Restart error (${sessionId}):`, err.message);
-        });
+        }
       }, code === 515 ? 3000 : 5000);
     }
   });

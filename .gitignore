@@ -18,3 +18,5 @@ backups/
 *.backup
 *.backup.js
 *.before-*
+
+sessions/
