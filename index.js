@@ -51,7 +51,7 @@ async function startWhatsApp(sessionId) {
     auth: state,
     logger: pino({ level: "debug" }),
     printQRInTerminal: false,
-    browser: Browsers.macOS("Chrome"),
+    browser: Browsers.ubuntu("Chrome"),
     syncFullHistory: false,
     markOnlineOnConnect: false,
     connectTimeoutMs: 120000
