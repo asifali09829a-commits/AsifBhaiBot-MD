@@ -1937,7 +1937,10 @@ if (cmd === ".menu") {
 ║┃
 ║┃ 🤖 *OTHER*
 ║┃ ➳ *.ai* *.echo* *.say*
-║┃ ➳ *.help* *.menu* *.vv* *.aoutreact on/off* *.vv* *.aoutreact*
+║┃ ➳ *.help* *.menu*
+║┃ ➳ *.vv*
+║┃ ➳ *.aoutreact on*
+║┃ ➳ *.aoutreact off*
 ║┃
 ║╰────•
 ╚══════─── • ───════╝
